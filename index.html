@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Vipul Text Editor</title>
+</head>
+
+<body>
+
+    <h1>My Text Editor</h1>
+
+    <p id="currentFile">No file selected</p>
+
+    <textarea
+        id="editor"
+        rows="15"
+        cols="70"
+        placeholder="Write something..."
+    ></textarea>
+
+    <br><br>
+
+    <button onclick="newFile()">New</button>
+
+    <button onclick="openFile()">Open</button>
+
+    <button onclick="saveFile()">Save</button>
+
+    <button onclick="saveAsFile()">Save As</button>
+
+  
+
+    <script src="renderer.js"></script>
+
+</body>
+
+</html>

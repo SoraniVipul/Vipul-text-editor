@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>My First Electron App</title>
+</head>
+
+<body>
+
+    <h1>Hello Electron!</h1>
+
+    <p>This is my first desktop application.</p>
+
+    <h2>My Electron Study</h2>
+
+    <input type="text" id="nameInput" placeholder="Enter your name">
+
+    <button onclick="sendName()">Send Name</button>
+    <br>
+    <button onclick="openSaveDialog()">Open Save Dialog</button>
+
+    <button onclick="openFile()">Open File</button>
+
+<p id="response"></p>
+
+<br>
+
+    <button onclick="buttonClick()">Click Me</button>
+
+    <script src="renderer.js"></script>
+</body>
+</html>
