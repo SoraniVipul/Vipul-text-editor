@@ -9,6 +9,7 @@ let currentFilePath = null;
 let isModified = false;
 let isWaitingForCloseSave = false;
 let mainWindow = null
+let updateWindow = null
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -215,47 +216,158 @@ function createWindow() {
 
 }
 
-app.whenReady().then(()=>{
+function createUpdateWindow() {
+
+    if (updateWindow && !updateWindow.isDestroyed()) {
+        updateWindow.focus();
+        return;
+    }
+
+    updateWindow = new BrowserWindow({
+        width: 420,
+        height: 300,
+        resizable: false,
+        minimizable: false,
+        maximizable: false,
+        parent: mainWindow,
+        modal: false,
+
+        webPreferences: {
+            preload: path.join(__dirname, "update-preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false
+        }
+    });
+
+    updateWindow.loadFile("update.html");
+
+    updateWindow.on("closed", () => {
+        updateWindow = null;
+    });
+
+}
+
+app.whenReady().then(() => {
     createWindow();
 
     setupAutoUpdater();
-    if(app.isPackaged){
-    autoUpdater.checkForUpdatesAndNotify();
+    if (app.isPackaged) {
+        autoUpdater.checkForUpdatesAndNotify();
     }
 });
 
 function setupAutoUpdater() {
 
     autoUpdater.on("checking-for-update", () => {
+
         console.log("Checking for update...");
+
     });
+
 
     autoUpdater.on("update-available", (info) => {
+
         console.log("Update available:", info.version);
+
+        createUpdateWindow();
+
+        // Window load થયા પછી data મોકલવું
+        updateWindow.webContents.once("did-finish-load", () => {
+
+            updateWindow.webContents.send("update-info", {
+                version: info.version
+            });
+
+        });
+
     });
 
-    autoUpdater.on("update-not-available", (info) => {
-        console.log("No update available.");
-    });
-
-    autoUpdater.on("error", (error) => {
-        console.log("Update error:", error.message);
-    });
 
     autoUpdater.on("download-progress", (progress) => {
+
         console.log(
-            "Download progress:",
+            "Download:",
             Math.round(progress.percent) + "%"
         );
+
+        if (updateWindow && !updateWindow.isDestroyed()) {
+
+            updateWindow.webContents.send("download-progress", {
+
+                percent: progress.percent,
+
+                transferred:
+                    (progress.transferred / 1024 / 1024).toFixed(1),
+
+                total:
+                    (progress.total / 1024 / 1024).toFixed(1)
+
+            });
+
+        }
+
     });
+
 
     autoUpdater.on("update-downloaded", (info) => {
-        console.log("Update downloaded:", info.version);
+
+        console.log(
+            "Update downloaded:",
+            info.version
+        );
+
+        if (updateWindow && !updateWindow.isDestroyed()) {
+
+            updateWindow.webContents.send("update-ready", {
+
+                version: info.version
+
+            });
+
+        }
+
     });
+
+
+    autoUpdater.on("update-not-available", (info) => {
+
+        console.log(
+            "No update available. Current:",
+            autoUpdater.currentVersion.version
+        );
+
+    });
+
+
+    autoUpdater.on("error", (error) => {
+
+        console.log(
+            "Update error:",
+            error.message
+        );
+
+        // Update window હોય તો બંધ કરો
+        if (updateWindow && !updateWindow.isDestroyed()) {
+
+            updateWindow.close();
+
+        }
+
+        dialog.showMessageBox(mainWindow, {
+
+            type: "error",
+
+            title: "Update Error",
+
+            message: "Unable to update application.",
+
+            detail: error.message
+
+        });
+
+    });
+
 }
-
-
-
 
 
 
@@ -445,6 +557,15 @@ ipcMain.on("save-as-file", async (event, data) => {
     event.sender.send("file-saveas-result", await result);
 });
 
+ipcMain.on("close-update-window", () => {
+
+    if (updateWindow && !updateWindow.isDestroyed()) {
+
+        updateWindow.close();
+
+    }
+
+});
 
 
 ipcMain.on("new-file-create", async (event) => {

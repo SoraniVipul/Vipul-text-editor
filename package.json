@@ -1,6 +1,6 @@
 {
   "name": "study",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -32,7 +32,8 @@
       {
         "provider": "github",
         "owner": "SoraniVipul",
-        "repo": "Vipul-text-editor"
+        "repo": "Vipul-text-editor",
+        "releaseType": "draft"
       }
     ]
   },

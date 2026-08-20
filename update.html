@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Software Update</title>
+
+    <link rel="stylesheet" href="update.css">
+</head>
+
+<body>
+
+    <div class="update-container">
+
+        <!-- Download Screen -->
+        <div id="downloadScreen">
+
+            <div class="update-icon">
+                ↻
+            </div>
+
+            <h2>Update Available</h2>
+
+            <p id="versionText">
+                New version available
+            </p>
+
+            <p class="download-text">
+                Downloading update...
+            </p>
+
+            <div class="progress-container">
+
+                <div id="progressBar" class="progress-bar"></div>
+
+            </div>
+
+            <div class="progress-info">
+
+                <span id="percent">
+                    0%
+                </span>
+
+                <span id="downloadSize">
+                    0 MB / 0 MB
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- Update Ready Screen -->
+        <div id="readyScreen" style="display:none;">
+
+            <div class="success-icon">
+                ✓
+            </div>
+
+            <h2>Update Ready</h2>
+
+            <p id="readyVersion">
+                New version is ready.
+            </p>
+
+            <p class="ready-text">
+                Restart the application to install the update.
+            </p>
+
+            <div class="buttons">
+
+                <button id="restartBtn">
+                    Restart & Install
+                </button>
+
+                <button id="laterBtn">
+                    Later
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="update.js"></script>
+
+</body>
+
+</html>
