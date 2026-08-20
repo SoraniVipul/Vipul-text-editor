@@ -1,7 +1,8 @@
 // const { promises } = require("dns");
-const { app, BrowserWindow, ipcMain, dialog , Menu} = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require("electron");
 const path = require("path");
 const fs = require("fs").promises;
+const packageInfo = require("./package.json");
 
 let currentFilePath = null;
 let isModified = false;
@@ -27,7 +28,7 @@ function createWindow() {
                 {
                     label: "New",
                     accelrator: "Ctrl+N",
-                    click: () =>{
+                    click: () => {
                         console.log("Menu -> new cliced");
                         mainWindow.webContents.send("menu-new-file");
 
@@ -36,7 +37,7 @@ function createWindow() {
                 {
                     label: "Open",
                     accelrator: "Ctrl+O",
-                    click: () =>{
+                    click: () => {
                         console.log("Menu -> Opne Clicked");
                         mainWindow.webContents.send("menu-open-file");
                     }
@@ -44,7 +45,7 @@ function createWindow() {
                 {
                     label: "Save",
                     accelrator: "Ctrl+S",
-                    click: () =>{
+                    click: () => {
                         console.log("Menu -> Opne Clicked");
                         mainWindow.webContents.send("menu-save-file");
                     }
@@ -52,7 +53,7 @@ function createWindow() {
                 {
                     label: "Save As",
                     accelrator: "Ctrl+Shift+s",
-                    click: () =>{
+                    click: () => {
                         console.log("Menu -> Opne Clicked");
                         mainWindow.webContents.send("menu-saveas-file");
                     }
@@ -60,14 +61,14 @@ function createWindow() {
                 {
                     label: "Exit",
                     accelrator: "Alt+F4",
-                    click: () =>{
+                    click: () => {
                         console.log("Menu -> Opne Clicked");
                         mainWindow.close();
                     }
                 }
 
             ]
-            
+
         },
         {
             label: "Edit",
@@ -79,7 +80,7 @@ function createWindow() {
                 {
                     label: "Redo",
                     role: "uedo",
-                   accelrator: "Ctrl + Y",
+                    accelrator: "Ctrl + Y",
                 },
                 {
                     label: "Cut",
@@ -100,11 +101,28 @@ function createWindow() {
             ]
         },
         {
-            label: "View"
+            label: "View",
             submenu: [
                 {
                     label: "Reload",
-                    role: "reload"
+                    click: async () => {
+                        console.log("Menu → Reload clicked");
+                        const result = await checkUnsavedChanges();
+                        if (result === "save") {
+                            const content = await getEditorContent();
+                            const saveResult = await saveFile(content);
+                            if (!saveResult.success) {
+                                return;
+                            }
+                            mainWindow.reload();
+                        }
+                        else if (result === "discard") {
+                            mainWindow.reload();
+                        }
+                        else if (result === "cancel") {
+                            return;
+                        }
+                    }
                 },
                 {
                     label: "Force Reload",
@@ -115,26 +133,63 @@ function createWindow() {
                     role: "toggleDevTools"
                 }
             ]
+        },
+        {
+            label: "Window",
+            submenu: [
+                {
+                    label: "Minimize",
+                    role: "minimize"
+                },
+                {
+                    label: "Close",
+                    role: "close"
+                }
+            ]
+        },
+        {
+            label: "Help",
+            submenu: [
+                {
+                    label: "About",
+                    click: () => {
+                        dialog.showMessageBox(mainWindow,
+                            {
+                                type: "info",
+                                title: "About The Text Editor",
+                                message: "Vipul Text Editor",
+                                detail:
+                                    "Version: " + packageInfo.version + "\n" +
+                                    "Author: Vipul Sorani\n" +
+                                    "Built with Electron\n" +
+                                    "Electron Version: " + process.versions.electron,
+                                buttons: ["OK"]
+                            }
+                        )
+                    }
+
+                }
+            ]
         }
     ];
-    
-   const menu = Menu.buildFromTemplate(templet);
-    
+
+    const menu = Menu.buildFromTemplate(templet);
+
     Menu.setApplicationMenu(menu);
 
 
     // Ask the user to save if there are unsaved changes when they try to close
     mainWindow.on("close", async (event) => {
         console.log("Window is trying to close");
-       
+
 
         if (isModified) {
-             event.preventDefault();
+            event.preventDefault();
             const result = await checkUnsavedChanges();
 
             console.log("Result:", result);
             if (result === "save") {
-                
+
                 const content = await getEditorContent()
                 const saveResult = await saveFile(content);
                 if (saveResult.success) {
@@ -151,7 +206,7 @@ function createWindow() {
             }
             else {
                 // response === 2 -> Cancel: do nothing (keep the window open)
-               
+
                 console.log("Close canceled by user");
             }
         }
@@ -281,13 +336,13 @@ ipcMain.on("open-file", async (event) => {
 
     const unsavResult = await checkUnsavedChanges();
 
-    if (unsavResult === "save"){
+    if (unsavResult === "save") {
         const content = await getEditorContent();
         const saveResut = await saveFile(content);
-        if(!saveResut.success){
+        if (!saveResut.success) {
             return;
-        }    
-    }else if (unsavResult === "cancel"){
+        }
+    } else if (unsavResult === "cancel") {
         return;
     }
 
