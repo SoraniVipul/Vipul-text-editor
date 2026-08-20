@@ -1,5 +1,6 @@
 // const { promises } = require("dns");
 const { app, BrowserWindow, ipcMain, dialog, Menu } = require("electron");
+const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const fs = require("fs").promises;
 const packageInfo = require("./package.json");
@@ -214,7 +215,49 @@ function createWindow() {
 
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(()=>{
+    createWindow();
+
+    setupAutoUpdater();
+    if(app.isPackaged){
+    autoUpdater.checkForUpdatesAndNotify();
+    }
+});
+
+function setupAutoUpdater() {
+
+    autoUpdater.on("checking-for-update", () => {
+        console.log("Checking for update...");
+    });
+
+    autoUpdater.on("update-available", (info) => {
+        console.log("Update available:", info.version);
+    });
+
+    autoUpdater.on("update-not-available", (info) => {
+        console.log("No update available.");
+    });
+
+    autoUpdater.on("error", (error) => {
+        console.log("Update error:", error.message);
+    });
+
+    autoUpdater.on("download-progress", (progress) => {
+        console.log(
+            "Download progress:",
+            Math.round(progress.percent) + "%"
+        );
+    });
+
+    autoUpdater.on("update-downloaded", (info) => {
+        console.log("Update downloaded:", info.version);
+    });
+}
+
+
+
+
+
 
 function updateWindowTitle(mainWindow) {
     if (!currentFilePath) {
