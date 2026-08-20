@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>About Vipul Text Editor</title>
+
+    <link rel="stylesheet" href="about.css" />
+  </head>
+
+  <body>
+    <div class="about-container">
+      <div class="app-icon">
+        <img src="icon.png" alt="Vipul Text Editor" />
+      </div>
+
+      <h1>Vipul Text Editor</h1>
+
+      <div class="version">Version <span id="appVersion">Loading...</span></div>
+
+      <div class="details">
+        <div class="detail-row">
+          <span class="label">Author</span>
+          <span id="author">Vipul Sorani</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="label">Electron</span>
+          <span id="electronVersion">Loading...</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="label">Platform</span>
+          <span id="platform">Loading...</span>
+        </div>
+      </div>
+
+      <div id="updateStatus" class="update-status"></div>
+
+      <div class="buttons">
+        <button id="checkUpdateBtn">Check for Updates</button>
+
+        <button id="closeBtn">OK</button>
+      </div>
+    </div>
+
+    <script src="about.js"></script>
+  </body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "study",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -20,7 +20,7 @@
     "productName": "Vipul Text Editor",
     "win": {
       "target": "nsis",
-      "icon": "build/icon.ico"
+      "icon": "icon.ico"
     },
     "nsis": {
       "artifactName": "Vipul-Text-Editor-Setup-${version}.${ext}",

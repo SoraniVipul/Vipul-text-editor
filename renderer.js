@@ -2,9 +2,105 @@
 
 let isModified = false;
 
+const editor = document.getElementById("editor");
+
+const cursorPosition = document.getElementById("cursorPosition");
+const characterCount = document.getElementById("characterCount");
+const wordCount = document.getElementById("wordCount");
+const currentFilePath = document.getElementById("currentFile");
+
+let toastTimer = null;
+
+function showToast(message, type = "success") {
+
+    const toast = document.getElementById("toast");
+    const toastMessage = document.getElementById("toastMessage");
+
+    if (!toast || !toastMessage) return;
+
+    // Previous timer clear
+    if (toastTimer) {
+        clearTimeout(toastTimer);
+    }
+
+    toastMessage.textContent = message;
+
+    // Remove old classes
+    toast.classList.remove(
+        "success",
+        "error",
+        "info"
+    );
+
+    // Add new type
+    toast.classList.add(type);
+
+    // Show
+    toast.classList.add("show");
+
+    // Hide after 3 seconds
+    toastTimer = setTimeout(() => {
+
+        toast.classList.remove("show");
+
+    }, 3000);
+}
 
 
 
+function updateStatusBar() {
+
+    const text = editor.value;
+
+    // Character count
+    characterCount.textContent =
+        "Characters: " + text.length;
+
+
+    // Word count
+    const words = text.trim()
+        ? text.trim().split(/\s+/).length
+        : 0;
+
+    wordCount.textContent =
+        "Words: " + words;
+
+
+    // Cursor position
+    const cursorIndex = editor.selectionStart;
+
+    const beforeCursor = text.substring(0, cursorIndex);
+
+    const lines = beforeCursor.split("\n");
+
+    const line = lines.length;
+
+    const column = lines[lines.length - 1].length + 1;
+
+    cursorPosition.textContent =
+        `Ln ${line}, Col ${column}`;
+}
+
+
+editor.addEventListener("input", updateStatusBar);
+
+editor.addEventListener("keyup", updateStatusBar);
+
+editor.addEventListener("click", updateStatusBar);
+
+
+
+
+// Initial status
+updateStatusBar();
+
+editor.addEventListener("input", () => {
+
+    if (!isModified) {
+        isModified = true;
+        window.electronAPI.setIsModifiedUpdate(isModified);
+    }
+});
 
 
 function openFile() {
@@ -12,11 +108,11 @@ function openFile() {
 }
 function saveFile() {
 
-    const data = document.getElementById("editor").value;
+    const data = editor.value;
     window.electronAPI.saveFile(data);
 }
 function saveAsFile() {
-    const data = document.getElementById("editor").value;
+    const data = editor.value;
     window.electronAPI.saveAsFile(data);
 }
 function newFile() {
@@ -29,67 +125,78 @@ window.electronAPI.onMenuNewFile(() => {
     newFile();
 });
 
-window.electronAPI.onMenuOpenFile(()=>{
+window.electronAPI.onMenuOpenFile(() => {
     openFile();
 })
-window.electronAPI.onMenuSaveFile(()=>{
+window.electronAPI.onMenuSaveFile(() => {
     saveFile();
 })
 
-window.electronAPI.onMenuSaveAsFile(()=>{
+window.electronAPI.onMenuSaveAsFile(() => {
     saveAsFile();
 })
 
 window.electronAPI.onNewfieResult((result) => {
+    
     if (result.success) {
-        document.getElementById("editor").value = ""
+        editor.value = ""
         isModified = false;
-        document.getElementById("currentFile").textContent = result.message;
+        currentFilePath.textContent = result.newPath;
+        showToast(result.message || "New File Create Successfully  .", "success");
+        updateStatusBar();
+    }
+    else
+    {
+         showToast(result.message || "New File Create failed.", "error");
     }
 });
 
-document.getElementById("editor").addEventListener("input", () => {
-   
-    if (!isModified){
-        isModified = true;
-        window.electronAPI.setIsModifiedUpdate(isModified);
-    }
+window.electronAPI.onMenuRecentFile((filePath) => {
+
+    window.electronAPI.openRecentFile(filePath);
+
 });
-
-
 
 window.electronAPI.onFileSaveResult((result) => {
-     console.log("this is save  result : " , result.message);
-    const response = document.getElementById("currentFile");
-    response.textContent = result.message;
-     if (result.success) {
+    console.log("this is save  result : ", result.message);
+
+    if (result.success) {
+        currentFilePath.textContent = "Current File: " + result.newPath;
+        showToast(result.message || "File Save Successfully  .", "success");
         isModified = false;
-     } 
+    } else {
+        showToast(result.message || "File Save failed.", "error");
+    }
 });
 
 
 
 
 window.electronAPI.onFileSaveAsResult((result) => {
-    console.log("this is save as result : " , result.message);
-    const response = document.getElementById("currentFile");
-    response.textContent = result.message;
-     if (result.success) {
+    console.log("this is save as result : ", result.message);
+
+    if (result.success) {
+        currentFilePath.textContent = "Current File: " + result.newPath;
+        showToast(result.message || "File Save As Successfully  .", "success");
         isModified = false;
-     } 
-   
+    } else {
+        showToast(result.message || "File Save As failed.", "error");
+    }
+
 });
 
 window.electronAPI.onFileOpenResult((result) => {
 
-    const response = document.getElementById("response");
+
     if (result.success) {
-        document.getElementById("editor").value = result.data;
-        document.getElementById("currentFile").textContent = "Current File: " + result.filePath;
+        editor.value = result.data;
+        currentFilePath.textContent = "Current File: " + result.newPath;
+        showToast(result.message || "File Open Successfuly  .", "success");
         isModified = false;
+        updateStatusBar();
 
     } else {
-        document.getElementById("currentFile").textContent = result.message;
+        showToast(result.message || "File Open failed.", "error");
     }
 });
 
@@ -99,7 +206,7 @@ window.electronAPI.onFileOpenResult((result) => {
 
 window.electronAPI.onGetEditorContent(() => {
 
-    const content = document.getElementById("editor").value;
+    const content = editor.value;
 
     window.electronAPI.sendEditorContent(content);
 

@@ -82,7 +82,26 @@ contextBridge.exposeInMainWorld("electronAPI", {
         });
 
     },
-     onMenuSaveFile: (callback) => {
+    openRecentFile: (filePath) => {
+        ipcRenderer.send("open-recent-file", filePath);
+    },
+    onMenuRecentFile: (callback) => {
+        ipcRenderer.on("menu-recent-file", (event, filePath) => {
+            callback(filePath);
+        });
+    },
+
+    onRecentFiles: (callback) => {
+        ipcRenderer.on("recent-files", (event, files) => {
+            callback(files);
+        });
+    },
+
+    clearRecentFiles: () => {
+        ipcRenderer.send("clear-recent-files");
+    },
+
+    onMenuSaveFile: (callback) => {
 
         ipcRenderer.on("menu-save-file", () => {
             callback();

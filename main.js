@@ -1,5 +1,5 @@
 // const { promises } = require("dns");
-const { app, BrowserWindow, ipcMain, dialog, Menu } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Menu, MenuItem, nativeImage } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const fs = require("fs").promises;
@@ -7,15 +7,68 @@ const packageInfo = require("./package.json");
 
 let currentFilePath = null;
 let isModified = false;
-let isWaitingForCloseSave = false;
+
 let mainWindow = null
 let updateWindow = null
+let aboutWindow = null;
+let recentFiles = [];
+const appIcon = nativeImage.createFromPath(path.join(__dirname, "icon.ico"));
+
+
+const recentFilesPath = path.join(app.getPath("userData"), "recent-files.json");
+
+
+async function loadRecentFiles() {
+    try {
+        const data = await fs.readFile(recentFilesPath, "utf8");
+        recentFiles = JSON.parse(data);
+        if (!Array.isArray(recentFiles)) {
+            recentFiles = [];
+        }
+    } catch (error) {
+        recentFiles = [];
+    }
+}
+
+
+async function saveRecentFiles() {
+    try {
+        await fs.writeFile(recentFilesPath, JSON.stringify(recentFiles, null, 2), "utf8");
+    } catch (error) {
+        console.log("Unable to save recent files:", error.message);
+    }
+}
+
+
+async function addRecentFile(filePath) {
+    if (!filePath) {
+        return;
+    }
+    // Same file remove
+    recentFiles = recentFiles.filter(
+        file => file !== filePath
+    );
+
+    // New file beginningમાં
+    recentFiles.unshift(filePath);
+
+    // Maximum 10 files
+    recentFiles = recentFiles.slice(0, 10);
+
+    await saveRecentFiles();
+
+    buildRecentFilesMenu();
+
+}
+
+
+
 
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
-
+         icon: appIcon,
         webPreferences: {
             preload: path.join(__dirname, "/preload.js"),
         }
@@ -59,6 +112,10 @@ function createWindow() {
                         console.log("Menu -> Opne Clicked");
                         mainWindow.webContents.send("menu-saveas-file");
                     }
+                },
+                {
+                    label: "Recent Files",
+                    submenu: []
                 },
                 {
                     label: "Exit",
@@ -155,19 +212,7 @@ function createWindow() {
                 {
                     label: "About",
                     click: () => {
-                        dialog.showMessageBox(mainWindow,
-                            {
-                                type: "info",
-                                title: "About The Text Editor",
-                                message: "Vipul Text Editor",
-                                detail:
-                                    "Version: " + packageInfo.version + "\n" +
-                                    "Author: Vipul Sorani\n" +
-                                    "Built with Electron\n" +
-                                    "Electron Version: " + process.versions.electron,
-                                buttons: ["OK"]
-                            }
-                        )
+                        createAboutWindow();
                     }
 
                 }
@@ -216,6 +261,73 @@ function createWindow() {
 
 }
 
+function buildRecentFilesMenu() {
+
+    const menu = Menu.getApplicationMenu();
+
+    if (!menu) {
+        return;
+    }
+
+    const fileMenu = menu.items.find(
+        item => item.label === "File"
+    );
+
+    if (!fileMenu) {
+        return;
+    }
+
+    const recentMenu = fileMenu.submenu.items.find(
+        item => item.label === "Recent Files"
+    );
+
+    if (!recentMenu) {
+        return;
+    }
+
+    recentMenu.submenu.clear();
+
+    if (recentFiles.length === 0) {
+        recentMenu.submenu.append(
+            new MenuItem({
+                label: "No Recent Files",
+                enabled: false
+            })
+        );
+
+    } else {
+        recentFiles.forEach(filePath => {
+            recentMenu.submenu.append(
+                new MenuItem({
+                    label: path.basename(filePath),
+                    toolTip: filePath,
+                    click: () => {
+                        mainWindow.webContents.send("menu-recent-file", filePath);
+                    }
+                })
+            );
+        });
+    }
+    recentMenu.submenu.append(
+        new MenuItem({
+            type: "separator"
+        })
+    );
+
+    recentMenu.submenu.append(
+        new MenuItem({
+            label: "Clear Recent Files",
+            click: async () => {
+                recentFiles = [];
+                await saveRecentFiles();
+                buildRecentFilesMenu();
+                mainWindow.webContents.send("recent-files", recentFiles);
+            }
+        })
+    );
+    Menu.setApplicationMenu(menu);
+}
+
 function createUpdateWindow() {
 
     if (updateWindow && !updateWindow.isDestroyed()) {
@@ -226,12 +338,13 @@ function createUpdateWindow() {
     updateWindow = new BrowserWindow({
         width: 420,
         height: 300,
+         icon: appIcon,
         resizable: false,
         minimizable: false,
         maximizable: false,
         parent: mainWindow,
         modal: false,
-
+        
         webPreferences: {
             preload: path.join(__dirname, "update-preload.js"),
             contextIsolation: true,
@@ -247,9 +360,65 @@ function createUpdateWindow() {
 
 }
 
-app.whenReady().then(() => {
-    createWindow();
+function createAboutWindow() {
 
+    if (aboutWindow && !aboutWindow.isDestroyed()) {
+        aboutWindow.focus();
+        return;
+    }
+
+    aboutWindow = new BrowserWindow({
+        width: 430,
+        height: 430,
+         icon: appIcon,
+
+        resizable: false,
+        minimizable: false,
+        maximizable: false,
+
+        parent: mainWindow,
+
+        modal: false,
+
+        webPreferences: {
+            preload: path.join(__dirname, "about-preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false
+        }
+    });
+
+    aboutWindow.loadFile("about.html");
+
+    aboutWindow.webContents.once("did-finish-load", () => {
+
+        aboutWindow.webContents.send("about-info", {
+
+            version: packageInfo.version,
+
+            author: "Vipul Sorani",
+
+            electronVersion:
+                process.versions.electron,
+
+            platform:
+                process.platform
+
+        });
+
+    });
+
+    aboutWindow.on("closed", () => {
+
+        aboutWindow = null;
+
+    });
+
+}
+
+app.whenReady().then(async () => {
+    await loadRecentFiles();
+    createWindow();
+    buildRecentFilesMenu();
     setupAutoUpdater();
     if (app.isPackaged) {
         autoUpdater.checkForUpdatesAndNotify();
@@ -267,7 +436,20 @@ function setupAutoUpdater() {
 
     autoUpdater.on("update-available", (info) => {
 
+
         console.log("Update available:", info.version);
+
+        if (aboutWindow && !aboutWindow.isDestroyed()) {
+
+            aboutWindow.webContents.send(
+                "about-update-status",
+                {
+                    type: "available",
+                    message: `New version available: ${info.version}`
+                }
+            );
+
+        }
 
         createUpdateWindow();
 
@@ -331,6 +513,18 @@ function setupAutoUpdater() {
 
     autoUpdater.on("update-not-available", (info) => {
 
+        if (aboutWindow && !aboutWindow.isDestroyed()) {
+
+            aboutWindow.webContents.send(
+                "about-update-status",
+                {
+                    type: "success",
+                    message: "You are using the latest version."
+                }
+            );
+
+        }
+
         console.log(
             "No update available. Current:",
             autoUpdater.currentVersion.version
@@ -345,6 +539,17 @@ function setupAutoUpdater() {
             "Update error:",
             error.message
         );
+        if (aboutWindow && !aboutWindow.isDestroyed()) {
+
+            aboutWindow.webContents.send(
+                "about-update-status",
+                {
+                    type: "error",
+                    message: "Unable to check for updates."
+                }
+            );
+
+        }
 
         // Update window હોય તો બંધ કરો
         if (updateWindow && !updateWindow.isDestroyed()) {
@@ -369,9 +574,7 @@ function setupAutoUpdater() {
 
 }
 
-
-
-function updateWindowTitle(mainWindow) {
+function windowTitleUpdate(mainWindow) {
     if (!currentFilePath) {
         mainWindow.setTitle("Untitle -Vipul Text Editor");
         return;
@@ -441,7 +644,15 @@ async function saveAsFile(data) {
         defaultPath: "mydata.txt"
     });
     if (!result.canceled) {
-        return (writeFile(result.filePath, data));
+        let savefilepath = result.filePath;
+        const extension = path.extname(savefilepath);
+        if (!extension) {
+            savefilepath += ".txt";
+        }
+        else if (extension.toLowerCase() !== ".txt") {
+            savefilepath = savefilepath.substring(0, (savefilepath.length - extension.length)) + ".txt";
+        }
+        return (writeFile(savefilepath, data));
     } else {
         return ({ success: false, message: "File save operation was canceled." });
     }
@@ -451,9 +662,10 @@ async function writeFile(path, content) {
     try {
         await fs.writeFile(path, content, "utf8");
         currentFilePath = path;
+        await addRecentFile(path);
         isModified = false;
-        updateWindowTitle(mainWindow);
-        return ({ success: true, message: "Successfully saved file" });
+        windowTitleUpdate(mainWindow);
+        return ({ success: true, message: "Successfully saved file", newPath: path });
 
     }
     catch (err) {
@@ -483,7 +695,7 @@ ipcMain.on("save-file", async (event, data) => {
 
 ipcMain.on("is-modified-update", async (event, modified) => {
     isModified = modified;
-    updateWindowTitle(mainWindow);
+    windowTitleUpdate(mainWindow);
     console.log('Modified stutus is :', isModified)
 });
 
@@ -524,17 +736,18 @@ ipcMain.on("open-file", async (event) => {
             return;
         }
         currentFilePath = result.filePaths[0];
+        await addRecentFile(currentFilePath);
         const data = await fs.readFile(currentFilePath, "utf8");
         event.sender.send("file-open-result",
             {
                 success: true,
                 canceled: false,
-                filePath: currentFilePath,
+                newPath: currentFilePath,
                 data: data
             }
         );
         isModified = false;
-        updateWindowTitle(mainWindow);
+        windowTitleUpdate(mainWindow);
     }
     catch (error) {
         console.log("Error:", error);
@@ -567,6 +780,11 @@ ipcMain.on("close-update-window", () => {
 
 });
 
+ipcMain.on("about-close", () => {
+    if (aboutWindow && !aboutWindow.isDestroyed()) {
+        aboutWindow.close();
+    }
+});
 
 ipcMain.on("new-file-create", async (event) => {
 
@@ -579,25 +797,102 @@ ipcMain.on("new-file-create", async (event) => {
         const content = await getEditorContent()
         const saveResult = await saveFile(content);
         if (!saveResult.success) {
+            event.sender.send("new-file-result",
+                { success: false, message: "New File not Create:." }
+            );
             return;
         }
     }
     else if (result === "cancel") {
+        event.sender.send("new-file-result",
+            { success: false, message: "New File Create Cancaled:." }
+        );
         return;
     }
     console.log("new File is create");
     currentFilePath = null;
     isModified = false;
 
-    updateWindowTitle(mainWindow);
+    windowTitleUpdate(mainWindow);
     event.sender.send("new-file-result",
-        { success: true, message: "New File Created :." }
+        { success: true, message: "New File Created :.", newPath: "New File Not Path selected...." }
     );
 
 });
 
+ipcMain.on("open-recent-file", async (event, filePath) => {
+    const unsavResult = await checkUnsavedChanges();
+    if (unsavResult === "save") {
+        const content = await getEditorContent();
+        const saveResult = await saveFile(content);
+        if (!saveResult.success) {
+            return;
+        }
+    } else if (unsavResult === "cancel") {
+        return;
+    }
+    try {
+        const data = await fs.readFile(filePath, "utf8");
+        currentFilePath = filePath;
+        isModified = false;
+        await addRecentFile(filePath);
+        windowTitleUpdate(mainWindow);
+        event.sender.send("file-open-result",
+            {
+                success: true,
+                canceled: false,
+                newPath: filePath,
+                data: data
+            }
+        );
+
+    } catch (error) {
+        // File delete/move થઈ ગઈ હોય
+        recentFiles = recentFiles.filter(file => file !== filePath);
+        await saveRecentFiles();
+        buildRecentFilesMenu();
+        event.sender.send("file-open-result",
+            {
+                success: false,
+                canceled: false,
+                message: "File could not be opened: " + error.message
+            }
+        );
+    }
+});
 
 
+ipcMain.on("about-check-for-updates", async () => {
+
+    if (!aboutWindow || aboutWindow.isDestroyed()) {
+        return;
+    }
+
+    aboutWindow.webContents.send(
+        "about-update-status",
+        {
+            type: "checking",
+            message: "Checking for updates..."
+        }
+    );
+
+    try {
+
+        await autoUpdater.checkForUpdates();
+
+    } catch (error) {
+
+        aboutWindow.webContents.send(
+            "about-update-status",
+            {
+                type: "error",
+                message: "Unable to check for updates."
+            }
+        );
+
+    }
+
+});
 
 
 

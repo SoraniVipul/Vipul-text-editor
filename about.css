@@ -1,0 +1,237 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+
+    background: #f5f6f8;
+
+    color: #222;
+
+    user-select: none;
+}
+
+
+.about-container {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+
+    padding: 25px 30px;
+}
+
+
+/* App Icon */
+
+.app-icon {
+    width: 65px;
+    height: 65px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 36px;
+
+    border-radius: 14px;
+
+    background: #e8f0fe;
+
+    margin-bottom: 12px;
+}
+
+
+/* Title */
+
+h1 {
+    margin: 0;
+
+    font-size: 22px;
+
+    font-weight: 600;
+}
+
+
+/* Version */
+
+.version {
+    margin-top: 6px;
+
+    font-size: 14px;
+
+    color: #666;
+}
+
+
+/* Details */
+
+.details {
+    width: 100%;
+
+    margin-top: 22px;
+
+    padding: 12px 15px;
+
+    border: 1px solid #ddd;
+
+    border-radius: 8px;
+
+    background: #fff;
+}
+
+
+.detail-row {
+    display: flex;
+
+    justify-content: space-between;
+
+    padding: 7px 0;
+
+    font-size: 13px;
+}
+
+
+.detail-row + .detail-row {
+    border-top: 1px solid #eee;
+}
+
+
+.label {
+    color: #777;
+}
+
+
+#author,
+#electronVersion,
+#platform {
+    color: #333;
+
+    font-weight: 500;
+}
+
+
+/* Update status */
+
+.update-status {
+
+    width: 100%;
+
+    min-height: 22px;
+
+    margin-top: 12px;
+
+    text-align: center;
+
+    font-size: 13px;
+
+    color: #666;
+}
+
+
+/* Buttons */
+
+.buttons {
+
+    width: 100%;
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    margin-top: auto;
+}
+
+
+button {
+
+    padding: 8px 16px;
+
+    border-radius: 6px;
+
+    border: 1px solid #ccc;
+
+    background: #fff;
+
+    color: #333;
+
+    font-size: 13px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+button:hover {
+
+    background: #f0f5ff;
+
+    border-color: #4c8bf5;
+
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+
+button:active {
+
+    transform: translateY(1px);
+}
+
+
+#checkUpdateBtn {
+
+    background: #4c8bf5;
+
+    border-color: #4c8bf5;
+
+    color: white;
+}
+
+
+#checkUpdateBtn:hover {
+
+    background: #3f78dc;
+
+    border-color: #3f78dc;
+}
+.app-icon {
+    width: 65px;
+    height: 65px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 14px;
+
+    background: #e8f0fe;
+
+    margin-bottom: 12px;
+
+    overflow: hidden;
+}
+
+.app-icon img {
+    width: 52px;
+    height: 52px;
+
+    object-fit: contain;
+}
