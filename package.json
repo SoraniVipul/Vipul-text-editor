@@ -1,6 +1,6 @@
 {
   "name": "study",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -23,6 +23,7 @@
       "icon": "build/icon.ico"
     },
     "nsis": {
+      "artifactName": "Vipul-Text-Editor-Setup-${version}.${ext}",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Vipul Text Editor"
